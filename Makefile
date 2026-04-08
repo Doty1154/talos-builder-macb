@@ -67,16 +67,21 @@ checkouts-clean:
 #
 # Patches
 #
-.PHONY: patches-pkgs patches-talos patches patches
+.PHONY: patches-pkgs patches-talos patches-sbc-raspberrypi patches patches
 patches-pkgs:
 	cd "$(CHECKOUTS_DIRECTORY)/pkgs" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0001-Patched-for-Raspberry-Pi-5.patch"
 
 patches-talos:
 	cd "$(CHECKOUTS_DIRECTORY)/talos" && \
-		git am "$(PATCHES_DIRECTORY)/siderolabs/talos/0001-Patched-for-Raspberry-Pi-5.patch"
+		git am "$(PATCHES_DIRECTORY)/siderolabs/talos/0001-Patched-for-Raspberry-Pi-5.patch" && \
+		git am "$(PATCHES_DIRECTORY)/siderolabs/talos/0002-Makefile.patch"
 
-patches: patches-pkgs patches-talos
+patches-sbc-raspberrypi:
+	cd "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi" && \
+		git am "$(PATCHES_DIRECTORY)/siderolabs/sbc-raspberrypi/0001-Patched-for-Raspberry-Pi-5.patch"
+
+patches: patches-pkgs patches-talos patches-sbc-raspberrypi
 
 # Backwards-compatible alias
 patches: patches

@@ -1,0 +1,77 @@
+From 29e731fce087b21e3324005336539f9c92de242a Mon Sep 17 00:00:00 2001
+From: local-build <local@build>
+Date: Wed, 8 Apr 2026 12:19:06 -0500
+Subject: [PATCH] Patched for Raspberry Pi 5
+
+---
+ Pkgfile                            |  8 ++++----
+ artifacts/dtb/raspberrypi/pkg.yaml | 11 ++++++-----
+ installers/rpi_5/src/config.txt    |  6 ------
+ 3 files changed, 10 insertions(+), 15 deletions(-)
+
+diff --git a/Pkgfile b/Pkgfile
+index edcb6dd..e2eb864 100644
+--- a/Pkgfile
++++ b/Pkgfile
+@@ -13,10 +13,10 @@ vars:
+   uboot_sha256: b60d5865cefdbc75da8da4156c56c458e00de75a49b80c1a2e58a96e30ad0d54
+   uboot_sha512: b1f988a497c77da60faf89ed33034e9ae58c4cd7f208e5ce451f1372e13540a66289bee4f08ca2f68f105d73f1ceae058b1f713db549edbcc885d9c66bdc4f8b
+ 
+-  # renovate: datasource=github-tags depName=raspberrypi/linux
+-  raspberrypi_kernel_version: stable_20250428
+-  raspberrypi_kernel_sha256: c95906cfbc7808de5860c6d86537bea22e3501f600a5209de59a86cb436886f6
+-  raspberrypi_kernel_sha512: 0ed5d490c491e590b5980dccf6fcac0dd3c47accbfacd40d91507c12801cff34fa6a1c68991c8a6c57bb259c909121414766f35a0b11c4bd5d62c3e11d710839
++  # rpi-6.18.y branch, commit 21da81b5507a (2026-03-29), kernel 6.18.20
++  raspberrypi_kernel_version: 21da81b5507a
++  raspberrypi_kernel_sha256: a2d22af1900f3fd5dbd2f49623f18b9e618382890542c7804e76d775e63f8750
++  raspberrypi_kernel_sha512: 2fba45bbf869965b4e2c4710a3350e8f80c3c09e516f5dd4358652754744dece431470902272cf367bc9ef413f2e3937be6a474f02fbf9e9653955a71c06f725
+ 
+   # renovate: datasource=github-tags depName=revolutionpi/linux
+   revpi_kernel_version: v6.6.46-rt39-revpi7
+diff --git a/artifacts/dtb/raspberrypi/pkg.yaml b/artifacts/dtb/raspberrypi/pkg.yaml
+index e64cf3e..4e75c83 100644
+--- a/artifacts/dtb/raspberrypi/pkg.yaml
++++ b/artifacts/dtb/raspberrypi/pkg.yaml
+@@ -6,7 +6,7 @@ dependencies:
+ steps:
+   - network: default
+     sources:
+-      - url: https://github.com/raspberrypi/linux/archive/refs/tags/{{ .raspberrypi_kernel_version }}.tar.gz
++      - url: https://github.com/raspberrypi/linux/archive/{{ .raspberrypi_kernel_version }}.tar.gz
+         destination: raspberrypi-linux.tar.gz
+         sha256: "{{ .raspberrypi_kernel_sha256 }}"
+         sha512: "{{ .raspberrypi_kernel_sha512 }}"
+@@ -15,10 +15,11 @@ steps:
+         tar xf raspberrypi-linux.tar.gz --strip-components=1
+         rm raspberrypi-linux.tar.gz
+ 
+-        for patch in $(find /pkg/patches -type f -name "*.patch" | sort); do
+-          echo "Applying patch $patch"
+-          patch -p1 < $patch || (echo "Failed to apply patch $patch" && exit 1)
+-        done
++        # Patches are for upstream/mainline kernel compatibility; skip when using RPi kernel
++        # for patch in $(find /pkg/patches -type f -name "*.patch" | sort); do
++        #   echo "Applying patch $patch"
++        #   patch -p1 < $patch || (echo "Failed to apply patch $patch" && exit 1)
++        # done
+ 
+         mkdir -p arch/arm/boot/dts/overlays/
+         cp -av /pkg/overlays/* arch/arm/boot/dts/overlays/
+diff --git a/installers/rpi_5/src/config.txt b/installers/rpi_5/src/config.txt
+index 9bef001..68d995c 100644
+--- a/installers/rpi_5/src/config.txt
++++ b/installers/rpi_5/src/config.txt
+@@ -1,10 +1,4 @@
+ # See https://www.raspberrypi.com/documentation/computers/configuration.html
+-# Reduce GPU memory to give more to CPU.
+-gpu_mem=32
+-# Enable maximum compatibility on both HDMI ports;
+-# only the one closest to the power/USB-C port will work in practice.
+-hdmi_safe:0=1
+-hdmi_safe:1=1
+ # Load U-Boot.
+ kernel=u-boot.bin
+ # Forces the kernel loading system to assume a 64-bit kernel.
+-- 
+2.50.1 (Apple Git-155)
+
