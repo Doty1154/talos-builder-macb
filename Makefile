@@ -43,7 +43,6 @@ help:
 	@echo "installer        : Build installer"
 	@echo "image            : Build disk image for Raspberry Pi 5"
 	@echo "pi5              : Full build pipeline for Raspberry Pi 5"
-	@echo "release          : Use only when building the final release, this will tag relevant images with the current Git tag."
 	@echo "clean            : Clean up any remains"
 
 #
@@ -130,30 +129,33 @@ initramfs-kernel:
 .PHONY: installer
 installer:
 	cd "$(CHECKOUTS_DIRECTORY)/talos" && \
-		$(MAKE) \
-			TAG=${TALOS_TAG} REGISTRY=$(REGISTRY) USERNAME=$(REGISTRY_USERNAME) PUSH=$(PUSH) \
-			PKG_KERNEL=$(REGISTRY)/$(REGISTRY_USERNAME)/kernel:$(PKGS_TAG) \
-			INSTALLER_ARCH=arm64 PLATFORM=linux/arm64 SED=$(SED) \
-			installer
-
-.PHONY: image
-image:
-	cd "$(CHECKOUTS_DIRECTORY)/talos" && \
 		docker \
 			run --rm -t -v ./_out:/out -v /dev:/dev --privileged $(REGISTRY)/$(REGISTRY_USERNAME)/imager:$(TALOS_TAG) \
-			$(ASSET_TYPE) --arch arm64 \
+			installer \
+			--arch arm64 \
 			--base-installer-image="$(REGISTRY)/$(REGISTRY_USERNAME)/installer-base:$(TALOS_TAG)" \
 			--overlay-name="rpi_5" \
 			--overlay-image="$(REGISTRY)/$(REGISTRY_USERNAME)/sbc-raspberrypi:$(SBCOVERLAY_TAG)" \
 			--overlay-option="configTxtAppend=$$CONFIG_TXT" \
 			$(EXTENSION_ARGS) \
 			$(EXTRA_KERNEL)
+		crane push \
+			./checkouts/talos/_out/installer-arm64.tar \
+			${REGISTRY}/${REGISTRY_USERNAME}/installer:${TALOS_TAG}-arm64-extensions
 
-.PHONY: release
-release:
-	docker pull $(REGISTRY)/$(REGISTRY_USERNAME)/installer:$(TALOS_TAG) && \
-		docker tag $(REGISTRY)/$(REGISTRY_USERNAME)/installer:$(TALOS_TAG) $(REGISTRY)/$(REGISTRY_USERNAME)/installer:$(TAG) && \
-		docker push $(REGISTRY)/$(REGISTRY_USERNAME)/installer:$(TAG)
+.PHONY: image
+image:
+	cd "$(CHECKOUTS_DIRECTORY)/talos" && \
+		docker \
+			run --rm -t -v ./_out:/out -v /dev:/dev --privileged $(REGISTRY)/$(REGISTRY_USERNAME)/imager:$(TALOS_TAG) \
+			$(ASSET_TYPE) \
+			--arch arm64 \
+			--base-installer-image="$(REGISTRY)/$(REGISTRY_USERNAME)/installer-base:$(TALOS_TAG)" \
+			--overlay-name="rpi_5" \
+			--overlay-image="$(REGISTRY)/$(REGISTRY_USERNAME)/sbc-raspberrypi:$(SBCOVERLAY_TAG)" \
+			--overlay-option="configTxtAppend=$$CONFIG_TXT" \
+			$(EXTENSION_ARGS) \
+			$(EXTRA_KERNEL)
 
 .PHONY: pi5
 pi5: checkouts-clean checkouts patches kernel initramfs-kernel installer-base imager overlay installer image
