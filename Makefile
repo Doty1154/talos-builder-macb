@@ -12,7 +12,8 @@ ASSET_TYPE ?= rpi_5
 CONFIG_TXT ?= dtparam=i2c_arm=on
 
 EXTENSIONS ?=
-EXTENSION_ARGS := $(foreach ext,$(EXTENSIONS),--system-extension-image $(ext))
+override EXTENSIONS := $(shell echo "$$EXTENSIONS")
+override EXTENSION_ARGS := $(foreach ext,$(EXTENSIONS),--system-extension-image $(ext))
 
 EXTRA_KERNEL_ARGS ?=
 EXTRA_KERNEL := $(foreach arg,$(EXTRA_KERNEL_ARGS),--extra-kernel-arg $(arg))
