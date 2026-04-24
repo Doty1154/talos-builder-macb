@@ -15,38 +15,41 @@ existing comment in the function notes:
 	 * interrupts are re-enabled.
 	 */
 
-and mitigates this by calling macb_tx_complete_pending() to look
-for a completed descriptor whose TX_USED bit the hardware has
-DMA'd but whose completion we processed without ever seeing an
-interrupt for.
+and mitigates this by calling macb_tx_complete_pending(), which
+inspects driver-visible ring state (descriptor->ctrl, after rmb())
+and reschedules NAPI if a completion is observable in memory.
 
-macb_tx_complete_pending() only inspects driver-visible ring state
-(descriptor->ctrl, after rmb()).  On PCIe-attached parts (BCM2712 +
-RP1 on Raspberry Pi 5 in particular) the descriptor DMA write that
-sets TX_USED can still be in flight in the PCIe fabric when we
-check.  The read-memory-barrier synchronises the CPU view of earlier
-CPU writes, but does not force the peripheral's in-flight DMA to
-retire.  In that window the check returns false, napi exits, the
-IER re-enable does not re-fire (the quirk above), and the queue
-stalls silently.
+On PCIe-attached parts (BCM2712 + RP1 on Raspberry Pi 5 is the
+setup we have in front of us), the descriptor DMA write that sets
+TX_USED may not have retired to system memory at the point
+macb_tx_complete_pending() runs.  The rmb() synchronises the CPU
+view of earlier CPU writes; it is not sufficient to retire an
+in-flight peripheral DMA write.  Under that ordering the in-memory
+descriptor can still read TX_USED=0 when the hardware has in fact
+completed the frame; the check returns false; NAPI exits; the
+quirk above prevents the re-enabled IER from re-firing; the ring
+goes quiescent.
 
-Re-check the hardware's own ISR state as well.  Reading a MAC
-register after IER re-enable serves two purposes:
+Add an explicit ISR read after the IER write.  The MMIO read
+serves two independent purposes:
 
-  (1) It drains any in-flight PCIe DMA writes of descriptor state,
-      so a subsequent macb_tx_complete_pending() sees an accurate
-      view of TX_USED.
+  (1) It is an architected PCIe read barrier for earlier
+      peripheral-originated DMA writes on the same path, so a
+      subsequent macb_tx_complete_pending() observes any TX_USED
+      write that was in flight at the time of the barrier.
 
-  (2) It directly observes whether the hardware currently has a
-      pending TCOMP signal, catching the case the existing driver
-      comment describes (completions raised while masked, not
-      re-fired).
+  (2) It samples the hardware ISR directly, so a TCOMP bit that
+      the hardware set while TCOMP was masked is visible here,
+      independently of whether the descriptor DMA has retired.
 
-If either path indicates pending work, schedule NAPI again.
+If either signal indicates pending work, reschedule NAPI via the
+same path as the existing check.
 
-Combined with the PCIe posted-write flush in patch 1/3, this closes
-the observed silent-TX-stall path on BCM2712/RP1 reported at the
-links below.
+This patch addresses one of three candidate races for the silent
+TX stall described in the cover letter.  Whether it is sufficient
+by itself, or whether it requires the PCIe posted-write flush in
+patch 1/3 to cover the observed behaviour, we have not yet
+verified at runtime.
 
 Link: https://github.com/cilium/cilium/issues/43198
 Link: https://bugs.launchpad.net/ubuntu/+source/linux-raspi/+bug/2133877

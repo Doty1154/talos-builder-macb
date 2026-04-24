@@ -1,30 +1,39 @@
 From 0000000000000000000000000000000000000003 Mon Sep 17 00:00:00 2001
 From: Lukasz Raczylo <lukasz@raczylo.com>
 Date: Fri, 24 Apr 2026 00:00:00 +0000
-Subject: [PATCH 3/3] net: macb: add TX stall watchdog to recover from lost
- TCOMP
+Subject: [PATCH 3/3] net: macb: add TX stall watchdog as defence-in-depth
+ safety net
 
-Patches 1/3 and 2/3 close two races by which a TCOMP interrupt can
-be lost on PCIe-attached macb instances.  This patch adds a
-defence-in-depth safety net: a per-queue delayed_work that calls
-macb_tx_restart() if queue->tx_tail has not advanced in one second
-despite the ring being non-empty.
+Patches 1/3 and 2/3 address two candidate races that could lead
+to a TCOMP completion being missed on PCIe-attached macb
+instances.  This patch adds a defence-in-depth safety net, in
+case a further race remains that we have not identified.
 
-The watchdog introduces no new recovery logic.  macb_tx_restart()
-already exists, is correctly locked, and already checks the
-hardware's TBQP against the driver's head index before writing
-TSTART: on a healthy ring it is a no-op at the hardware level.  All
-the watchdog adds is the trigger.
+The watchdog is a per-queue delayed_work that runs once per
+second.  It snapshots queue->tx_tail; if the ring is non-empty
+(queue->tx_head != queue->tx_tail) and tx_tail has not advanced
+since the previous tick, it calls macb_tx_restart().
 
-If patches 1/3 and 2/3 completely eliminate the stall, this code
-never does anything beyond a spin_lock/unlock and a branch per
-second per queue.  If a further race remains -- hardware or
-driver-level -- this turns a multi-minute silent hang into a
-one-second bump.
+No new recovery logic is introduced.  macb_tx_restart() already
+exists in this file, is correctly locked (tx_ptr_lock, bp->lock),
+and verifies that the hardware's TBQP is behind the driver's
+head index before re-asserting TSTART.  On a healthy ring it is
+a no-op at the hardware level; the watchdog only supplies the
+missing trigger.
 
-On our 24-node Raspberry Pi 5 fleet this was empirically needed:
-before the patches in this series, multiple nodes per day hit the
-stall and required external watchdog intervention to recover.
+On a healthy queue the per-tick cost is one spin_lock_irqsave()
+/ spin_unlock_irqrestore() and one branch.  The delayed_work is
+only scheduled between macb_open() and macb_close(), and is
+cancelled synchronously on close.
+
+Context for submission: on our 24-node Raspberry Pi 5 fleet,
+before this series, an out-of-band user-space watchdog
+(monitoring tx_packets from /sys/class/net/.../statistics and
+toggling the link down/up when it froze) was required to keep
+nodes usable.  We include this kernel-side watchdog as a cleaner
+in-kernel equivalent for any residual stall that patches 1 and
+2 do not cover.  We are willing to drop this patch if the view
+is that 1 and 2 should stand alone.
 
 Link: https://github.com/cilium/cilium/issues/43198
 Link: https://bugs.launchpad.net/ubuntu/+source/linux-raspi/+bug/2133877
