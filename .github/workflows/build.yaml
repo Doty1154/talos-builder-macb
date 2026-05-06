@@ -159,3 +159,14 @@ jobs:
             metal-arm64.raw.xz \
             --title "${{ github.ref_name }}" \
             --notes "$NOTES"
+
+      # ──────────────────────────────────────────────
+      # Cleanup (always runs)
+      # ──────────────────────────────────────────────
+
+      - name: Cleanup build artifacts
+        if: always()
+        run: |
+          rm -rf ./checkouts
+          rm -f ./metal-arm64.raw.xz
+          docker buildx prune --all --force
