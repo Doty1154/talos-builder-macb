@@ -1,14 +1,14 @@
 PKG_VERSION := v1.12.0
 TALOS_VERSION := v1.12.7
-SBCOVERLAY_VERSION := v0.2.0
+SBCOVERLAY_VERSION := e5ab774
 
 PUSH ?= true
 REGISTRY ?= ghcr.io
-REGISTRY_USERNAME ?= talos-rpi5
+REGISTRY_USERNAME ?= macb-unified
 TAG ?= $(shell git describe --tags --exact-match)
 
 SED ?= sed
-ASSET_TYPE ?= rpi_5
+ASSET_TYPE ?= rpi_generic
 CONFIG_TXT ?= dtparam=i2c_arm=on
 
 EXTENSIONS ?=
@@ -20,7 +20,7 @@ EXTRA_KERNEL := $(foreach arg,$(EXTRA_KERNEL_ARGS),--extra-kernel-arg $(arg))
 
 PKG_REPOSITORY := https://github.com/siderolabs/pkgs.git
 TALOS_REPOSITORY := https://github.com/siderolabs/talos.git
-SBCOVERLAY_REPOSITORY := https://github.com/siderolabs/sbc-raspberrypi
+SBCOVERLAY_REPOSITORY := https://github.com/sidero-community/sbc-raspberrypi
 
 CHECKOUTS_DIRECTORY := $(PWD)/checkouts
 PATCHES_DIRECTORY := $(PWD)/patches
@@ -53,7 +53,8 @@ help:
 checkouts:
 	git clone -c advice.detachedHead=false --branch "$(PKG_VERSION)" "$(PKG_REPOSITORY)" "$(CHECKOUTS_DIRECTORY)/pkgs"
 	git clone -c advice.detachedHead=false --branch "$(TALOS_VERSION)" "$(TALOS_REPOSITORY)" "$(CHECKOUTS_DIRECTORY)/talos"
-	git clone -c advice.detachedHead=false --branch "$(SBCOVERLAY_VERSION)" "$(SBCOVERLAY_REPOSITORY)" "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi"
+	git clone -c advice.detachedHead=false "$(SBCOVERLAY_REPOSITORY)" "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi" && \
+		cd "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi" && git -c advice.detachedHead=false checkout "$(SBCOVERLAY_VERSION)"
 
 checkouts-clean:
 	rm -rf "$(CHECKOUTS_DIRECTORY)/pkgs"
@@ -143,7 +144,7 @@ installer:
 			installer \
 			--arch arm64 \
 			--base-installer-image="$(REGISTRY)/$(REGISTRY_USERNAME)/installer-base:$(TALOS_TAG)" \
-			--overlay-name="rpi_5" \
+			--overlay-name="rpi_generic" \
 			--overlay-image="$(REGISTRY)/$(REGISTRY_USERNAME)/sbc-raspberrypi:$(SBCOVERLAY_TAG)" \
 			--overlay-option="configTxtAppend=$$CONFIG_TXT" \
 			$(EXTENSION_ARGS) \
@@ -160,7 +161,7 @@ image:
 			$(ASSET_TYPE) \
 			--arch arm64 \
 			--base-installer-image="$(REGISTRY)/$(REGISTRY_USERNAME)/installer-base:$(TALOS_TAG)" \
-			--overlay-name="rpi_5" \
+			--overlay-name="rpi_generic" \
 			--overlay-image="$(REGISTRY)/$(REGISTRY_USERNAME)/sbc-raspberrypi:$(SBCOVERLAY_TAG)" \
 			--overlay-option="configTxtAppend=$$CONFIG_TXT" \
 			$(EXTENSION_ARGS) \

@@ -6,8 +6,7 @@ Subject: [PATCH] Patched for Raspberry Pi 5
 ---
  Pkgfile                            |  8 ++++----
  artifacts/dtb/raspberrypi/pkg.yaml | 11 ++++++-----
- installers/rpi_5/src/config.txt    |  6 ------
- 3 files changed, 10 insertions(+), 15 deletions(-)
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/Pkgfile b/Pkgfile
 index edcb6dd..e2eb864 100644
@@ -41,15 +40,17 @@ index e64cf3e..4e75c83 100644
          destination: raspberrypi-linux.tar.gz
          sha256: "{{ .raspberrypi_kernel_sha256 }}"
          sha512: "{{ .raspberrypi_kernel_sha512 }}"
-@@ -15,10 +15,11 @@ steps:
+@@ -15,10 +15,13 @@
          tar xf raspberrypi-linux.tar.gz --strip-components=1
          rm raspberrypi-linux.tar.gz
  
++        # Drop broken-cd from CM5 sdio1; BCM2712 SDHCI has native card-detect
++        sed -i '/broken-cd;/d' arch/arm64/boot/dts/broadcom/bcm2712-rpi-cm5.dtsi
++        # Upstream mainline patches don't apply to the RPi vendor kernel; skip
 -        for patch in $(find /pkg/patches -type f -name "*.patch" | sort); do
 -          echo "Applying patch $patch"
 -          patch -p1 < $patch || (echo "Failed to apply patch $patch" && exit 1)
 -        done
-+        # Patches are for upstream/mainline kernel compatibility; skip when using RPi kernel
 +        # for patch in $(find /pkg/patches -type f -name "*.patch" | sort); do
 +        #   echo "Applying patch $patch"
 +        #   patch -p1 < $patch || (echo "Failed to apply patch $patch" && exit 1)
@@ -57,21 +58,6 @@ index e64cf3e..4e75c83 100644
  
          mkdir -p arch/arm/boot/dts/overlays/
          cp -av /pkg/overlays/* arch/arm/boot/dts/overlays/
-diff --git a/installers/rpi_5/src/config.txt b/installers/rpi_5/src/config.txt
-index 9bef001..68d995c 100644
---- a/installers/rpi_5/src/config.txt
-+++ b/installers/rpi_5/src/config.txt
-@@ -1,10 +1,4 @@
- # See https://www.raspberrypi.com/documentation/computers/configuration.html
--# Reduce GPU memory to give more to CPU.
--gpu_mem=32
--# Enable maximum compatibility on both HDMI ports;
--# only the one closest to the power/USB-C port will work in practice.
--hdmi_safe:0=1
--hdmi_safe:1=1
- # Load U-Boot.
- kernel=u-boot.bin
- # Forces the kernel loading system to assume a 64-bit kernel.
 -- 
 2.50.1 (Apple Git-155)
 

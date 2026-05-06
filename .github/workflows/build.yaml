@@ -2,10 +2,20 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      talos_version:
+        description: 'Talos version (e.g. v1.12.7)'
+        required: false
+        default: 'v1.12.7'
+      runner:
+        description: 'GitHub Actions runner (e.g. ubuntu-24.04-arm, self-hosted)'
+        required: false
+        default: 'ubuntu-24.04-arm'
 
 env:
   REGISTRY: ghcr.io
-  REGISTRY_USERNAME: ${{ github.repository_owner }}/talos-builder
+  REGISTRY_USERNAME: ${{ github.repository_owner }}/macb-unified
   # Extensions to bake into the installer image.
   # Format: space-separated list of image:tag references (digests resolved at build time).
   EXTENSION_ISCSI_IMAGE: ghcr.io/siderolabs/iscsi-tools:v0.2.0
@@ -18,7 +28,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ github.event.inputs.runner || 'ubuntu-24.04-arm' }}
     steps:
       - uses: actions/checkout@v4
       - uses: imjasonh/setup-crane@v0.4
@@ -38,12 +48,16 @@ jobs:
       - name: Extract Talos version from tag
         id: talos-version
         run: |
-          # Tag format: v1.11.6-rpi5, v1.11.5-cm5, etc.
-          # Extract the upstream Talos version (vMAJOR.MINOR.PATCH) from the tag.
-          TAG="${{ github.ref_name }}"
-          TALOS_VERSION=$(echo "$TAG" | grep -oE '^v[0-9]+\.[0-9]+\.[0-9]+')
+          # Manual dispatch: use the input directly.
+          # Tag trigger: extract vMAJOR.MINOR.PATCH from the tag (e.g. v1.11.6-rpi5 -> v1.11.6).
+          if [ -n "${{ github.event.inputs.talos_version }}" ]; then
+            TALOS_VERSION="${{ github.event.inputs.talos_version }}"
+          else
+            TAG="${{ github.ref_name }}"
+            TALOS_VERSION=$(echo "$TAG" | grep -oE '^v[0-9]+\.[0-9]+\.[0-9]+')
+          fi
           echo "TALOS_VERSION=${TALOS_VERSION}" >> $GITHUB_ENV
-          echo "Resolved TALOS_VERSION=${TALOS_VERSION} from tag ${TAG}"
+          echo "Resolved TALOS_VERSION=${TALOS_VERSION}"
 
       - name: Resolve extension image digests
         run: |
@@ -96,7 +110,7 @@ jobs:
             REGISTRY_USERNAME=${{ env.REGISTRY_USERNAME }} \
             EXTENSIONS="${{ env.EXTENSIONS }}" \
             image
-          mv ./checkouts/talos/_out/metal-arm64.raw.xz ./metal-arm64-rpi5.raw.xz
+          mv ./checkouts/talos/_out/metal-arm64.raw.xz ./metal-arm64.raw.xz
 
       # ──────────────────────────────────────────────
       # Release
@@ -111,7 +125,7 @@ jobs:
           NOTES=$(cat <<EOF
           > ⚠️ Experimental build, use at your own risk.
 
-          Patched Talos Linux for **Raspberry Pi 5** using Pi Foundation vendor kernel
+          Patched Talos Linux for **Raspberry Pi CM4 + CM5** (unified `rpi_generic` overlay) using Pi Foundation vendor kernel
 
           ### Extensions included
 
@@ -122,14 +136,14 @@ jobs:
 
           | Platform | Disk image | Installer image |
           |----------|-----------|----------------|
-          | **RPi 5 / CM5** | \`metal-arm64-rpi5.raw.xz\` | \`${INSTALLER_PI5}\` |
+          | **CM4 + CM5 (rpi_generic)** | \`metal-arm64.raw.xz\` | \`${INSTALLER_PI5}\` |
 
           ### Fresh install
 
           Download the disk image for your board and flash it:
           \`\`\`bash
-          xz -d metal-arm64-rpi5.raw.xz
-          dd if=metal-arm64-rpi5.raw of=<disk> bs=4M status=progress
+          xz -d metal-arm64.raw.xz
+          dd if=metal-arm64.raw of=<disk> bs=4M status=progress
           \`\`\`
 
           ### Upgrade
@@ -142,6 +156,6 @@ jobs:
           )
           gh release create \
             ${{ github.ref_name }} \
-            metal-arm64-rpi5.raw.xz \
+            metal-arm64.raw.xz \
             --title "${{ github.ref_name }}" \
             --notes "$NOTES"
