@@ -101,7 +101,7 @@ jobs:
             image
           crane push \
             ./checkouts/talos/_out/installer-arm64.tar \
-            ${{ env.REGISTRY }}/${{ env.REGISTRY_USERNAME }}/installer:${{ github.ref_name }}-arm64-extensions
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_USERNAME }}/installer:${{ env.TALOS_VERSION }}-arm64-extensions
 
       - name: "Pi5 — Build metal disk image"
         run: |
@@ -117,11 +117,11 @@ jobs:
       # ──────────────────────────────────────────────
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          INSTALLER_PI5="${{ env.REGISTRY }}/${{ env.REGISTRY_USERNAME }}/installer:${{ github.ref_name }}"
+          INSTALLER_PI5="${{ env.REGISTRY }}/${{ env.REGISTRY_USERNAME }}/installer:${{ env.TALOS_VERSION }}-arm64-extensions"
           NOTES=$(cat <<EOF
           > ⚠️ Experimental build, use at your own risk.
 
@@ -155,9 +155,10 @@ jobs:
           EOF
           )
           gh release create \
-            ${{ github.ref_name }} \
+            ${{ env.TALOS_VERSION }} \
             metal-arm64.raw.xz \
-            --title "${{ github.ref_name }}" \
+            --title "${{ env.TALOS_VERSION }}" \
+            --prerelease \
             --notes "$NOTES"
 
       # ──────────────────────────────────────────────
