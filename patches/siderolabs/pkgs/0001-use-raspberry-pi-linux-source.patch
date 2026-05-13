@@ -1,0 +1,31 @@
+From a435fde87cab57174f3addaeedc31ccaf9ab815c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E2=80=9Cdoti=E2=80=9D?= <“doti@catboyindustries.co”>
+Date: Wed, 13 May 2026 11:38:10 -0700
+Subject: [PATCH] use raspberry pi linux source
+
+---
+ kernel/prepare/pkg.yaml | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/prepare/pkg.yaml b/kernel/prepare/pkg.yaml
+index 6c6e61d..3d781ec 100644
+--- a/kernel/prepare/pkg.yaml
++++ b/kernel/prepare/pkg.yaml
+@@ -6,10 +6,10 @@ dependencies:
+   - image: "{{ .LLVM_IMAGE }}:{{ .TOOLS_REV }}"
+ steps:
+   - sources:
+-      - url: https://cdn.kernel.org/pub/linux/kernel/v{{ regexReplaceAll "(\\d+)(.\\d+)(\\.\\d+)?$" .linux_version "${1}" }}.x/linux-{{ .linux_version }}.tar.xz
+-        destination: linux.tar.xz
+-        sha256: "{{ .linux_sha256 }}"
+-        sha512: "{{ .linux_sha512 }}"
++      - url: "https://github.com/raspberrypi/linux/archive/{{ .raspberrypi_kernel_version }}.tar.gz"
++        destination: linux.tar.gz
++        sha256: "{{ .raspberrypi_kernel_sha256 }}"
++        sha512: "{{ .raspberrypi_kernel_sha512 }}"
+       - url: https://github.com/a13xp0p0v/kernel-hardening-checker/archive/{{ .kspp_ref }}.tar.gz
+         destination: kspp.tar.gz
+         sha256: "{{ .kspp_sha256 }}"
+-- 
+2.54.0
+
