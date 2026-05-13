@@ -1,0 +1,25 @@
+From df650aa5bb8c96ada0ef51507be06f7f2027f440 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E2=80=9Cdoti=E2=80=9D?= <“doti@catboyindustries.co”>
+Date: Wed, 13 May 2026 12:12:31 -0700
+Subject: [PATCH] use correct tar gz file
+
+---
+ kernel/prepare/pkg.yaml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/prepare/pkg.yaml b/kernel/prepare/pkg.yaml
+index 6c6e61d..c54b7c4 100644
+--- a/kernel/prepare/pkg.yaml
++++ b/kernel/prepare/pkg.yaml
+@@ -19,7 +19,7 @@ steps:
+     prepare:
+       - |
+         mkdir -p /src
+-        tar -xJf linux.tar.xz --strip-components=1 -C /src
++        tar -xzf linux-{{ .raspberrypi_kernel_version }}.tar.gz --strip-components=1 -C /src
+ 
+         cd /src
+         make mrproper
+-- 
+2.54.0
+
