@@ -20,7 +20,7 @@ index 6c6e61d..3d781ec 100644
 -        sha256: "{{ .linux_sha256 }}"
 -        sha512: "{{ .linux_sha512 }}"
 +      - url: "https://github.com/raspberrypi/linux/archive/{{ .raspberrypi_kernel_version }}.tar.gz"
-+        destination: linux.tar.gz
++        destination: linux-{{ .raspberrypi_kernel_version }}.tar.gz
 +        sha256: "{{ .raspberrypi_kernel_sha256 }}"
 +        sha512: "{{ .raspberrypi_kernel_sha512 }}"
        - url: https://github.com/a13xp0p0v/kernel-hardening-checker/archive/{{ .kspp_ref }}.tar.gz
