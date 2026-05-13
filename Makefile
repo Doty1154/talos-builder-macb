@@ -69,7 +69,9 @@ patches-pkgs:
 	cd "$(CHECKOUTS_DIRECTORY)/pkgs" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0001-use-raspberry-pi-linux-source.patch" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0002-port-changes-for-6.18.29-kernel.patch" && \
-		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0003-use-raspberry-pi-linux-source.patch"
+		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0003-use-raspberry-pi-linux-source.patch" && \
+		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0004-use-correct-tar-gz-file.patch"
+
 
 patches-sbc-raspberrypi:
 	cd "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi" && \
