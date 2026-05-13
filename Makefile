@@ -64,7 +64,7 @@ checkouts-clean:
 #
 # Patches
 #
-.PHONY: patches-pkgs patches-sbc-raspberrypi patches-linux patches
+.PHONY: patches-pkgs patches-sbc-raspberrypi patches
 patches-pkgs:
 	cd "$(CHECKOUTS_DIRECTORY)/pkgs" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0001-use-raspberry-pi-linux-source.patch" && \
@@ -77,18 +77,7 @@ patches-sbc-raspberrypi:
 		git am "$(PATCHES_DIRECTORY)/siderolabs/sbc-raspberrypi/0001-Patched-for-Raspberry-Pi-5.patch" && \
 		cp -v "$(PATCHES_DIRECTORY)/siderolabs/sbc-raspberrypi/0011-cm5-sdio1-drop-broken-cd.patch" "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi/artifacts/dtb/raspberrypi/patches/"
 
-# Drop local kernel .patch files into the pkgs kernel/build patch dir so
-# they are picked up by the patch loop in kernel/build/pkg.yaml. Sorted
-# numeric filenames preserve apply order.
-patches-linux:
-	@if [ -d "$(PATCHES_DIRECTORY)/linux" ] && ls "$(PATCHES_DIRECTORY)/linux"/*.patch >/dev/null 2>&1; then \
-		mkdir -p "$(CHECKOUTS_DIRECTORY)/pkgs/kernel/build/patches" && \
-		cp -v "$(PATCHES_DIRECTORY)/linux"/*.patch "$(CHECKOUTS_DIRECTORY)/pkgs/kernel/build/patches/"; \
-	else \
-		echo "No local kernel patches in $(PATCHES_DIRECTORY)/linux, skipping"; \
-	fi
-
-patches: patches-pkgs patches-sbc-raspberrypi patches-linux
+patches: patches-pkgs patches-sbc-raspberrypi 
 
 .PHONY: kernel
 kernel:
