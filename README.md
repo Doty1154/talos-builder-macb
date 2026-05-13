@@ -1,6 +1,6 @@
-# Raspberry Pi 5 Talos Builder
+# Raspberry Pi Talos Builder
 
-This repository builds custom Talos Linux images for the **Raspberry Pi 5**. It patches the Kernel and Talos build process to use the Linux Kernel source provided by [raspberrypi/linux](https://github.com/raspberrypi/linux).
+This repository builds custom Talos Linux images for the **Raspberry Pi**. It patches the Kernel and Talos build process to use the Linux Kernel source provided by [raspberrypi/linux](https://github.com/raspberrypi/linux).
 
 ## What's not working?
 
@@ -8,16 +8,16 @@ This repository builds custom Talos Linux images for the **Raspberry Pi 5**. It 
 
 ## How to use?
 
-Each release contains disk images and installer images for the Raspberry Pi 5 platforms.
+Each release contains disk images and installer images for the Raspberry Pi platform.
 
 ### Examples
 
 Initial:
 
 ```bash
-# Raspberry Pi 5 / CM5
-xz -d metal-arm64-rpi5.raw.xz
-dd if=metal-arm64-rpi5.raw of=<disk> bs=4M status=progress
+# Raspberry Pi 5/ CM5
+xz -d metal-arm64-rpi.raw.xz
+dd if=metal-arm64-rpi.raw of=<disk> bs=4M status=progress
 ```
 
 Upgrade:
@@ -26,7 +26,7 @@ Upgrade:
 # Raspberry Pi 5 / CM5
 talosctl upgrade \
   --nodes <node IP> \
-  --image ghcr.io/talos-rpi5/installer:<version>-rpi5
+  --image ghcr.io/talos-rpi5/installer:<version>
 ```
 
 ## Building
@@ -77,6 +77,7 @@ EXTENSION_ARGS = $(foreach ext,$(EXTENSIONS),--system-extension-image $(ext))
 `EXTENSIONS` is a space-separated list of `image:tag@sha256:digest` references passed as a make variable at build time — no Makefile edits needed. Internally, the Makefile expands each entry into a `--system-extension-image` flag and passes them all to the Talos imager.
 
 **Adding extensions to the local build:**
+
 Simply add the package url and version to the talos.env file, you can look up the urls and versions here.
 
 https://github.com/siderolabs/extensions#extension-catalog
