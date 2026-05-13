@@ -64,17 +64,12 @@ checkouts-clean:
 #
 # Patches
 #
-.PHONY: patches-pkgs patches-talos patches-sbc-raspberrypi patches-linux patches
+.PHONY: patches-pkgs patches-sbc-raspberrypi patches-linux patches
 patches-pkgs:
 	cd "$(CHECKOUTS_DIRECTORY)/pkgs" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0001-use-raspberry-pi-linux-source.patch" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0002-port-changes-for-6.18.29-kernel.patch" && \
 		git am "$(PATCHES_DIRECTORY)/siderolabs/pkgs/0003-use-raspberry-pi-linux-source.patch"
-
-patches-talos:
-	cd "$(CHECKOUTS_DIRECTORY)/talos" && \
-		git am "$(PATCHES_DIRECTORY)/siderolabs/talos/0001-Patched-for-Raspberry-Pi-5.patch" && \
-		git am "$(PATCHES_DIRECTORY)/siderolabs/talos/0002-Makefile.patch"
 
 patches-sbc-raspberrypi:
 	cd "$(CHECKOUTS_DIRECTORY)/sbc-raspberrypi" && \
@@ -92,7 +87,7 @@ patches-linux:
 		echo "No local kernel patches in $(PATCHES_DIRECTORY)/linux, skipping"; \
 	fi
 
-patches: patches-pkgs patches-talos patches-sbc-raspberrypi patches-linux
+patches: patches-pkgs patches-sbc-raspberrypi patches-linux
 
 .PHONY: kernel
 kernel:
